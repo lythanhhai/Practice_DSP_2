@@ -16,8 +16,11 @@ fileName_Test = [
 
 
 k = 5;
-coefficient = 39;
-%{
+coefficient = 13;
+
+% nhận dạng nguyên âm bằng phương phương mfcc
+
+
 % trích xuất 5xk vector đặc trưng
 vectorFeatureAver_a = vectorFeatureAverage(vowelTraining, fileName, 1, k, coefficient);
 vectorFeatureAver_e = vectorFeatureAverage(vowelTraining, fileName, 2, k, coefficient);
@@ -25,9 +28,9 @@ vectorFeatureAver_i = vectorFeatureAverage(vowelTraining, fileName, 3, k, coeffi
 vectorFeatureAver_o = vectorFeatureAverage(vowelTraining, fileName, 4, k, coefficient);
 vectorFeatureAver_u = vectorFeatureAverage(vowelTraining, fileName, 5, k, coefficient);
 
-figure(1);
+%figure(1);
 
-gscatter(vectorFeatureAver_a(1, :), vectorFeatureAver_a(2, :));
+%gscatter(vectorFeatureAver_a(1, :), vectorFeatureAver_a(2, :));
 
 numberFileCorrect = 0;
 
@@ -80,11 +83,81 @@ end
 fprintf("Do chinh xac la %f(%c) \n", numberFileCorrect / 105 * 100, '%');
 %}
 
-[vectorFeature_Before, vectorFeature] = extractMFCC("./nguyenAmHuanLuyen/09MPD/a.wav", '09MPD_a', k, coefficient);
-vectorFeature
+
+% test
+
+[vectorFeature_Before, vectorFeature, dftz] = extractMFCC(vowelTraining(92), '01MDA_e', k, coefficient);
+vectorFeature;
 vectorFeature_Before;
+dftz;
 
 
+% nhận dạng nguyên âm bằng phương pháp fft
+
+%{
+% trích xuất 5 vector đặc trưng của 5 nguyên âm
+vectorFeatureAver_FFT_a = vectorFeatureAverage_FFT(vowelTraining, fileName, 1, k, coefficient);
+vectorFeatureAver_FFT_e = vectorFeatureAverage_FFT(vowelTraining, fileName, 2, k, coefficient);
+vectorFeatureAver_FFT_i = vectorFeatureAverage_FFT(vowelTraining, fileName, 3, k, coefficient);
+vectorFeatureAver_FFT_o = vectorFeatureAverage_FFT(vowelTraining, fileName, 4, k, coefficient);
+vectorFeatureAver_FFT_u = vectorFeatureAverage_FFT(vowelTraining, fileName, 5, k, coefficient);
+
+%vectorFeatureAver_FFT_a;
+
+
+numberFileCorrect = 0;
+
+for i = 1:length(vowelTest)
+    % trích xuất vector đặc trưng của nguyên âm kiểm thử
+    [vectorFeature_Before_Test, vectorFeature_Test, dftz_aver] = extractMFCC(vowelTest(i), fileName(i), k, coefficient);
+    % tính khoảng cách giữa vector đặc trưng của nguyên âm kiểm thử với
+    % 5 vector trung bình của 5 nguyên âm
+    [distance_a, distance_e, distance_i, distance_o, distance_u] = euclideanDistance_FFT(512, dftz_aver, vectorFeatureAver_FFT_a, vectorFeatureAver_FFT_e, vectorFeatureAver_FFT_i, vectorFeatureAver_FFT_o, vectorFeatureAver_FFT_u);
+
+    % tìm khoảng cách có giá trị nhỏ nhất trong k vector 
+    vectorMin(1) = distance_a;
+    vectorMin(2) = distance_e;
+    vectorMin(3) = distance_i;
+    vectorMin(4) = distance_o;
+    vectorMin(5) = distance_u;
+
+    % nhận dạng nguyên âm
+    
+    minValue_final = vectorMin(1);
+    indexVowel = 1;
+    for j=2:5
+        if vectorMin(j) < minValue_final
+            minValue_final = vectorMin(j);
+            indexVowel = j;
+        end
+    end
+    
+    if indexVowel == 1
+        identifyVowel = 'a';
+    elseif indexVowel == 2
+        identifyVowel = 'e';
+    elseif indexVowel == 3
+        identifyVowel = 'i';
+    elseif indexVowel == 4
+        identifyVowel = 'o';
+    elseif indexVowel == 5
+        identifyVowel = 'u';
+    else 
+        identifyVowel = "haha";
+    end
+
+    % kiểm tra kết quả nhận dạng với nhãn tên file
+    if strfind(fileName_Test(i), identifyVowel)
+        numberFileCorrect = numberFileCorrect + 1;
+        fprintf("%s duoc nhan dang la nguyen am /%c/ - Đúng\n ", fileName_Test(i), identifyVowel);
+    else
+        fprintf("%s duoc nhan dang la nguyen am /%c/ - Sai\n ", fileName_Test(i), identifyVowel);
+    end
+     
+end
+fprintf("So file dung: %d/%s \n", numberFileCorrect, '105');
+fprintf("Do chinh xac la %f(%c) \n", numberFileCorrect / 105 * 100, '%');
+%}
 
 
 
