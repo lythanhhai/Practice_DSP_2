@@ -1,5 +1,5 @@
  %close all;clear;clc
- function [vectorFeature_Before, vectorFeature] =  extractMFCC(filename, tenFile, k, coefficient)
+ function [vectorFeature_Before, vectorFeature, dftz_aver] =  extractMFCC(filename, tenFile, k, coefficient)
  
      % input audio
      [x,fs] = audioread(filename);
@@ -39,8 +39,8 @@
     
     % chia nguyên âm thành 3 vùng và lấy vùng ở giữa cho các khung ổn định
     segmentAver = floor((findMagnitude(length(findMagnitude)) - findMagnitude(1)) / overlap_duration / 3);
-    magniLeft =  findMagnitude(1) / overlap_duration + segmentAver;
-    magniRight =  findMagnitude(length(findMagnitude)) / overlap_duration - segmentAver;
+    magniLeft =  round(findMagnitude(1) / overlap_duration + segmentAver);
+    magniRight =  round(findMagnitude(length(findMagnitude)) / overlap_duration - segmentAver);
     
     % tính mfcc
     c = v_melcepst(x, fs, 'M', coefficient, floor(3*log(fs)), round(0.03*fs), round(0.03*fs/1.5), 0, 0.5);
@@ -58,7 +58,7 @@
             col = col + 1;
         end
     end
-    vectorFrame(1, :);
+    vectorFrame;
     
     % tính vector đặc trưng trung bình các khung ổn định
     for i=1:length(vectorFrame(:, 1))
@@ -72,37 +72,31 @@
     
  
     % Tạo ma trận centroid
+
+    X0 = zeros(k, 1);
     if k <= (magniRight - magniLeft + 1)
        for i=1:k
-           for j=1:coefficient
-                 X0(i, j) = vectorFrame(i, j);
-           end
+           X0(i) = vectorFrame(i, 6);
        end
     else
-       X0 = zeros(k, coefficient);
        for i=1:(magniRight - magniLeft + 1)
-           for j=1:coefficient
-               X0(i, j) = vectorFrame(i, j);
-           end
+           X0(i) = vectorFrame(i, 6);
        end
-       %{
-       for i=(magniRight - magniLeft + 1 + 1):k
-           for j=1:coefficient
-               X0(i, j) = 0;
-           end
-       end
-       %}
     end
-    X0;
-    vectorFrame
-    X1 = [vectorFrame(1, 1),
-          vectorFrame(1, 2),
-          vectorFrame(1, 3),
-          vectorFrame(1, 4),
-          vectorFrame(1, 5)]
+
     % tìm k vector trung bình
-    [vectorFeature] = v_kmeans(vectorFrame, k, X1);  
+    [vectorFeature] = v_kmeans(vectorFrame, k);  
     vectorFeature;
+    
+    for i=(magniLeft):(magniRight)
+        dftz = vectorFFT(P(i, :), 1024);
+        if i == (magniLeft)
+            dftz_aver = dftz;
+        else
+            dftz_aver = dftz_aver + dftz;
+        end
+    end
+    dftz_aver = dftz_aver / (magniRight - magniLeft + 1);
     
     %{
     % khung thời gian tín hiệu
